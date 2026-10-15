@@ -1,3 +1,36 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/tmnas-logo-white.png">
+    <img src="images/tmnas-logo.png" alt="Tokio Marine North America Services" width="320">
+  </picture>
+</p>
+
+<h1 align="center">TMNAS &times; Harness Software Delivery Workshop</h1>
+
+<p align="center">
+  Continuous Integration &bull; DevSecOps &bull; Continuous Delivery &bull; Chaos Engineering &bull; Governance &bull; <b>ServiceNow Change Management</b>
+</p>
+
+---
+
+Welcome to the hands-on workshop prepared for **Tokio Marine North America Services (TMNAS)**. Over the following labs you will build an end-to-end delivery pipeline for a sample application, harden it with security scanning, derisk releases with canary deployments, chaos experiments and continuous verification, and finally put it under change control with **policy as code** and **ServiceNow change requests** - exactly the guardrails a regulated insurance business needs, without slowing delivery down.
+
+# Table of Contents
+
+- [Lab 1 - Build](#lab-1---build)
+- [Lab 2 - DevSecOps](#lab-2---devsecops)
+- [Lab 3 - Continuous Deploy - Frontend](#lab-3---continuous-deploy---frontend)
+- [Lab 4 - Continuous Deploy - Backend](#lab-4---continuous-deploy---backend)
+- [Lab 5 - Chaos Engineering](#lab-5---chaos-engineering)
+- [Lab 6 - Validate Release](#lab-6---validate-release)
+- [Lab 7 - Governance & Change Management with ServiceNow](#lab-7---governance--change-management-with-servicenow)
+- [Lab 8 - Governance/Policy as Code (Advanced)](#lab-8---governancepolicy-as-code-advanced)
+- [Lab 9 - Enhanced Change Management Automation (Optional)](#lab-9---enhanced-change-management-automation-optional)
+
+> **Pre-provisioned for you:** your project already contains a **SNOW Approval** stage template, **ServiceNow Close Ticket** and **ServiceNow Close Failed** step templates, and an **Approval Required Policy** (with a disabled policy set). They all use the shared `workshop-snow` ServiceNow connector.
+
+---
+
 # Lab 1 - Build
 
 ### Summary: Setup a CI Pipeline, including running source code tests, building the executable, building and pushing the artifact to a remote repository
@@ -593,64 +626,109 @@ Observe the **logs** of the probe **Resilience Score** generated in comparisson 
 - Add a canary rollout from 10% to 50% traffic and see how this impacts the traffic distribution
 
 
-# Lab 7 - Governance/Policy as Code
+# Lab 7 - Governance & Change Management with ServiceNow
 
-### Summary: Create and apply policies as code in order to enable governance and promote self-service. In Lab 2 we saw how a user is impacted by policies in place, now is the time to create such policies
+### Summary: Your pipeline builds, tests, scans and deploys the frontend and backend. Now the change advisory board wants a word. In regulated environments you can't ship to production without following change policy and keeping an audit trail. In this lab you will enforce an approval gate with Policy as Code and integrate ServiceNow so change requests are raised, approved and closed automatically by the pipeline. Compliance as code, not compliance as a bottleneck.
 
 **Learning Objective(s):**
 
-- Create a policy that evaluates when editing pipelines
+- Enforce governance guardrails using Policy as Code (OPA)
 
-- Create a policy that evaluates during pipeline execution
+- Automatically create a ServiceNow change request populated with pipeline metadata
 
-- Test policy enforcement
+- Gate production deployments on a ServiceNow approval
 
-**Steps\
-****Create a Policy to require Approvals**
+- Close the change request automatically once the release succeeds
 
-1. From the secondary menu, select **Project Settings** and select **Governance Policies**
+**Why it matters:** Governance doesn't have to be manual, inconsistent or slow. Every pipeline follows the same change process, every release leaves an auditable trail in ServiceNow, and developers never have to fill in a change form by hand.
 
-2. Click **Build a Sample Policy**
+**Steps**
 
-3. From the suggested list select **Pipeline - Approval**  and click on next
+**Policy as Code**
 
-4. Click Next: Enforce Policy
+1. From the secondary menu, select **Project Settings** and select **Policies**
 
-5. Set the values according to the table  below and confirm
+2. Select the **Policies** tab, open **Approval Required Policy** and review the rego. It denies any pipeline where a **Deployment** stage is not preceded by an **Approval** stage
 
-| Input            | Value        | Notes |
-| ---------------- | ------------ | ----- |
-| Trigger Event    |On Run|       |
-| Failure Strategy |Error & exit|       |
+3. Click **Select Input** on the right and select the following values
 
-**Test the Policy to require Approvals**
+| Input        | Value              | Notes |
+| ------------ | ------------------ | ----- |
+| Entity Type  |Pipeline|       |
+| Organization |\<your-org>|       |
+| Project      |\<your-project>|       |
+| Action       |On Save|       |
 
-1. Open your pipeline
+4. Select your most recent pipeline save, click **Apply** and then click **Test**. What do you think will happen?
 
-2. Try to run the pipeline and note that the failure due to lack of an approval stage
+> **Note:** The Harness Approval step we added inside the backend stage in Lab 4 is not enough - change policy requires an approval **before** any deployment stage, so the test fails. Failure is success, the policy is working as designed.
 
-3. Click **Save** and note that the failure due to lack of an approval stage
+![Policy as Code](images/lab5-opa.gif "Policy as Code")
 
-4. Open the pipeline in edit mode and navigate to the “**frontend**” stage
+5. Select the **Policy Sets** tab, find **Approval Required Policy Set** and toggle **Enforced** on
 
-5. Before the rolling deployment step add **Harness Approval** step according to the table  below
+**Governance in Action**
 
-| Input            | Value            | Notes |
-| ---------------- | ---------------- | ----- |
-| Step Name        |Approval|       |
-| Type of Approval |Harness Approval|       |
+1. Open your pipeline in Pipeline Studio
 
-6. Configure the Approval step as follows
+2. Make a small change (for example, add a tag to the pipeline) and click **Save**
 
-| Input       | Value             | Notes |
-| ----------- | ----------------- | ----- |
-| Name        |Approval|       |
-| User Groups |All Project Users|       |
+3. Note that the save is blocked by the **Approval Required Policy**. Let's fix it!
 
-7. In a similar way as before navigate to the “**backend**” stage
-8. Before the canary deployment block add **Harness Approval**
-10. Click **Save** and note that the save succeeds without any policy failure
+![Policy Violation](images/lab5-policy-violation.gif "Policy Violation")
 
+**Approvals via ServiceNow Change Requests**
+
+1. Hover before the **frontend** stage and click the **+** icon to add a new stage
+
+2. Click **Use Template**, select the **SNOW Approval** template and click **Use Template**
+
+3. Configure the stage as follows and click **Set Up Stage**
+
+| Input      | Value               | Notes |
+| ---------- | ------------------- | ----- |
+| Stage Name |ServiceNow Approval| The name must match exactly - the close templates reference this stage to find the change number |
+
+4. The template is pre-configured, so there are no inputs to fill in. Toggle **Overview** to see its two steps
+
+| Step          | Type               | What it does |
+| ------------- | ------------------ | ------------ |
+| Create Ticket |ServiceNow Create| Raises a Normal change request with the pipeline name, execution number, triggering user, execution URL, justification, implementation, backout and test plans |
+| Approval      |ServiceNow Approval| Polls the change request every 30s. Approves when **State = Implement**, rejects when **State = Canceled** |
+
+5. Click on each step to see how it is configured. As a template user you cannot change the configuration of this enterprise-approved template - only the template administrator can. Note how Harness expressions such as `<+pipeline.executionUrl>` and `<+execution.steps.Create_Ticket.ticket.ticketNumber>` dynamically populate the ticket and the approval
+
+6. Navigate to the **backend** stage and, after the last step of the execution, click **Add Step**, select **Use Template** and choose **ServiceNow Close Ticket**
+
+| Input | Value        | Notes |
+| ----- | ------------ | ----- |
+| Name  |Close Ticket| Sets the change to **Closed** with close code **Successful** and links the execution in the close notes |
+
+7. Click **Save**. No violations this time - hooray for compliance!
+
+![ServiceNow Approval](images/lab5-add-approval.gif "ServiceNow Approval")
+
+**Approve the change as a Release Manager**
+
+1. Click **Run** to execute the pipeline
+
+| Input       | Value | Notes       |
+| ----------- | ----- | ----------- |
+| Branch Name |main| Leave as is |
+
+2. The pipeline pauses on the **ServiceNow Approval** stage. The pipeline has already raised the change request on your behalf and moved it to **Scheduled** - no manual change records for the developer to maintain
+
+3. Click the **ServiceNow Approval** stage, select the **Approval** step and click the change number link in the step details to open the change request in a new tab
+
+4. Log in to the ServiceNow sandbox with the credentials provided by your instructor. Review the metadata the pipeline added to the change, then click **Implement** in the top right corner
+
+5. Switch back to Harness and watch the pipeline continue once the approval criteria are met. When the backend stage completes, the **Close Ticket** step closes the change as **Successful**
+
+![ServiceNow Approval](images/lab7-snow-approval.gif "ServiceNow Approval")
+
+**Bonus**:
+- Run the pipeline again and this time **Cancel** the change in ServiceNow. Observe how the pipeline is rejected before anything is deployed to production
+- What happens to the change if the release fails after it was approved? See Lab 9
 
 # Lab 8 - Governance/Policy as Code (Advanced)
 
@@ -704,3 +782,36 @@ Observe the **logs** of the probe **Resilience Score** generated in comparisson 
 | Payload     |{"NODE\_OSS\_CRITICAL\_COUNT": _\<variable>_}| Set the field type to Expression, then replace _\<variable>_ with OWASP output variable CRITICAL. Go to a previous execution to copy the variable path. |
 
 5. Save the pipeline and execute. Note that the pipeline fails at the policy evaluation step due to critical vulnerabilities being found by OWASP.
+
+
+# Lab 9 - Enhanced Change Management Automation (Optional)
+
+### Summary: Close the loop on failed releases. Configure rollback steps that automatically update ServiceNow when a deployment fails.
+
+**Learning Objective(s):**
+
+- Configure rollback-specific steps in deployment stages
+
+- Keep ServiceNow in sync with the real outcome of every release, including automated rollbacks
+
+**Why it matters:** When continuous verification or chaos experiments trigger an automated rollback, the change record must reflect what happened. Recording failures automatically keeps change management accurate and accountable without anyone chasing tickets after an incident.
+
+**Steps**
+
+1. Open your pipeline in Pipeline Studio
+
+2. Click into the **backend** stage and toggle the **Rollback** view in the top right corner
+
+![Rollback view](images/lab8-rollback-view.png "Rollback view")
+
+3. Click the **+** button at the end of the rollback steps, select **Use Template** and choose **ServiceNow Close Failed**
+
+| Input | Value               | Notes |
+| ----- | ------------------- | ----- |
+| Name  |Close Failed Ticket| Sets the change to **Closed** with close code **Unsuccessful** and links the failed execution in the close notes |
+
+4. Apply the changes and **Save** the pipeline
+
+![Rollback studio](images/lab8-rollback-studio.gif "Rollback studio")
+
+5. Run the pipeline and approve the change in ServiceNow as in Lab 7. When the pod-memory chaos experiment from Lab 5 causes continuous verification to fail, choose **Rollback** (or let the failure strategy roll back the stage). Open the change request again and confirm it was closed as **Unsuccessful** with a link to the failed execution
