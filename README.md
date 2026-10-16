@@ -24,10 +24,11 @@ Welcome to the hands-on workshop prepared for **Tokio Marine North America Servi
 - [Lab 5 - Chaos Engineering](#lab-5---chaos-engineering)
 - [Lab 6 - Validate Release](#lab-6---validate-release)
 - [Lab 7 - Governance & Change Management with ServiceNow](#lab-7---governance--change-management-with-servicenow)
-- [Lab 8 - Governance/Policy as Code (Advanced)](#lab-8---governancepolicy-as-code-advanced)
-- [Lab 9 - Enhanced Change Management Automation (Optional)](#lab-9---enhanced-change-management-automation-optional)
+- [Lab 8 - Production Guardrails](#lab-8---production-guardrails)
+- [Lab 9 - Enhanced Change Management Automation](#lab-9---enhanced-change-management-automation)
+- [Lab 10 - Governance/Policy as Code (Advanced)](#lab-10---governancepolicy-as-code-advanced)
 
-> **Pre-provisioned for you:** your project already contains a **SNOW Approval** stage template, **ServiceNow Close Ticket** and **ServiceNow Close Failed** step templates, and an **Approval Required Policy** (with a disabled policy set). They all use the shared `workshop-snow` ServiceNow connector.
+> **Pre-provisioned for you:** your project already contains a **SNOW Approval** stage template, **ServiceNow Close Ticket**, **ServiceNow Close Failed** and **Change Verified** step templates, and the **Approval Required**, **Production Guardrail** and **Change Verified** policies. They all use the shared `workshop-snow` ServiceNow connector.
 
 ---
 
@@ -47,8 +48,7 @@ Welcome to the hands-on workshop prepared for **Tokio Marine North America Servi
 
 **Steps**
 
-1. From the left hand menu, navigate to **Projects** → **Select the project available**\
-   ![](https://lh7-us.googleusercontent.com/docsz/AD_4nXfhuMykMsIHl-7FjliWssHc0uwRpdLdrnq7GkGAI0g6UBZM69F1zpQ8ZA8N_vMqjpoGFYFR_weJk7OtOGGa2bksIaS6BlktwytmuJ1THM3e8O6tDT18HYWwFyGUye8ubsrHBChI8ORrCQ88JcKWpLjQ0DsXDS0NSZrkfZ4RUQ?key=cRG2cvp_PHVW0KG2Gq6Y_A)
+1. From the left hand menu, navigate to **Projects** → **Select the project available**
 
 1) From the left hand side menu select **Pipelines**
 
@@ -103,7 +103,7 @@ Welcome to the hands-on workshop prepared for **Tokio Marine North America Servi
 | ------------- | ------------------- | ----- |
 | Template Name |Compile Application|       |
 
-- Select the  template and press **Use Template,** then provide a name for that template
+- Select the  template and press **Use Template,** then provide a name for that template
 
 
 
@@ -118,14 +118,18 @@ Welcome to the hands-on workshop prepared for **Tokio Marine North America Servi
 | Input             | Value                                               | Notes                                                                    |
 | ----------------- | --------------------------------------------------- | ------------------------------------------------------------------------ |
 | Name              |Push to DockerHub|                                                                          |
-| Docker Connector  |dockerhub|                                                                          |
+| Docker Connector  |dockerhub| Select the **Third-Party Artifact Registry** tab to find it              |
 | Docker Repository |nikpap/harness-workshop|                                                                          |
 | Tags              |<+variable.username>-<+pipeline.sequenceId>| This will be the tag of the image using harness expressions. Click on the pin and select expression and paste the value              |
 | **Optional  Configuration** |                                            |                                                                                                                                                   |
-| Dockerfile        |/harness/frontend-app/harness-webapp/Dockerfile| This tells harness where is the Dockerfile for building the app          |
+| Dockerfile        |/harness/frontend-app/harness-webapp/Dockerfile| This tells harness where is the Dockerfile for building the app          |
 | Context           |/harness/frontend-app/harness-webapp| This tells from where to run the instructions included in the dockerfile |
 
+![Push to DockerHub](images/lab1-docker.png "Push to DockerHub")
+
 1. Click **Apply Changes** to close the config dialog
+
+![Build stage](images/lab1-studio.png "Build stage")
 
 6) Click **Save** and then click **Run** to execute the pipeline with the following inputs
 
@@ -134,12 +138,16 @@ Welcome to the hands-on workshop prepared for **Tokio Marine North America Servi
 | ----------- | ----- | ------------ |
 | Branch Name |main| prepopulated |
 
+7) The execution is stopped before it starts. Your security team's organisation policy (**tmnas101-secops**) requires the Fortify and OWASP scans in every pipeline. Failure is success - you will fix it in Lab 2.
+
+![Run blocked by policy](images/lab2-policy-fail.png "Run blocked by policy")
+
 
 # Lab 2 - DevSecOps
 
 **Summary:** Our security team has implemented orchestration of **Fortify** and **OWASP** scans for our code in a reusable form **(templates)**. In order to improve our security posture they have also added policies to enforce us to include those templates
 
-![](https://lh7-us.googleusercontent.com/docsz/AD_4nXcLr5TGcKRWOjVgB_sCAHHEeLPyd6EBdnkt2-mq_imTkZbQMEwJD03Q1wZyhWqHxoCNIIYWJWlRbnZrvZn2pPYIwTzXlOGdhMDEgn-J2JnK7lVastmfpdwTqDHXjpP0DK3TgU1gM-Ec_0iZLicWV7KpgW2FdXUCcAtraDGaEz8hI3dpWGLXkg?key=cRG2cvp_PHVW0KG2Gq6Y_A)
+![Build stage with security scans](images/lab2-studio.png "Build stage with security scans")
 
 **Learning Objective(s):**
 
@@ -153,10 +161,12 @@ Welcome to the hands-on workshop prepared for **Tokio Marine North America Servi
 
 1. In the existing pipeline, within the Build stage **before** PushToDockerhub step click on the plus icon to add a new step
 
-2. Select use template\
-   ![](https://lh7-us.googleusercontent.com/docsz/AD_4nXeC5rTVxlk7DeZeU_cINwcKo6Nf2wVW9brQ9MiCEfppJwmU-uH3QcNZ53qTxhur57KeySksoDBg9EqjhgKOgAEDKon6iNz9cFxozBe9VZssV-t77VNo6t1zPUvm6e2NOZJDKncxd9c2GM4HE-h-L4cIOl4u6Uqx_azoKchMdg?key=cRG2cvp_PHVW0KG2Gq6Y_A)
+2. Select **Use template**\
+   ![Use template](images/lab2-use-template.png "Use template")
 
-3. Select **DevX Fortify Scan** 
+3. Select **Devx Fortify Scan - DAST**
+
+   ![Fortify template](images/lab2-fortify-select.png "Fortify template")
 
 4. Name the step **Fortify**
 
@@ -164,7 +174,7 @@ Welcome to the hands-on workshop prepared for **Tokio Marine North America Servi
 
 6. Select use template
 
-7. Select **OWASP**
+7. Select **owasp**
 
 8. Name the step **OWASP**
 
@@ -176,7 +186,9 @@ Welcome to the hands-on workshop prepared for **Tokio Marine North America Servi
 | ----------- | ----- | ----- |
 | Branch Name |main|       |
 
-After the **Build and Push** stage is complete, go to the **Security Tests** tab to see the deduplicated, normalized and prioritized list of vulnerabilities discovered across your scanners.
+This time the security policy passes and the build runs. After the **Build** stage is complete, go to the **Vulnerabilities** tab to see the deduplicated, normalized and prioritized list of vulnerabilities discovered across your scanners.
+
+![Vulnerabilities](images/lab2-security.png "Vulnerabilities")
 
 
 # Lab 3 - Continuous Deploy - Frontend
@@ -223,22 +235,26 @@ After the **Build and Push** stage is complete, go to the **Security Tests** tab
 | Manifest Identifier        |templates|                                    |
 | Repository                 |harnessrepo|                                    |
 | Branch                     |main|                                    |
-| File/Folder Path           |harness-deploy/frontend/manifests|                                    |
+| File/Folder Path           |harness-deploy/frontend/manifests|                                    |
 | Values.yaml                |harness-deploy/frontend/values.yaml|                                    |
 | - **Add Artifact Source**  |                                                     |                                    |
 | Artifact Repository Type   |Docker Registry|                                    |
-| Docker Registry Connector  |dockerhub|                                    |
+| Docker Registry Connector  |dockerhub|                                    |
 | Artifact Source Identifier |frontend|                                    |
 | Image Path                 |nikpap/harness-workshop|                                    |
 | Tag                        |<+variable.username>-<+pipeline.sequenceId>| Select value, then click on the pin and select expression and paste the value |
+
+![Manifest](images/lab3-manifest.png "Manifest")
+![Artifact source](images/lab3-artifact.png "Artifact source")
+![frontend service](images/lab3-service.png "frontend service")
 
 - Click **Save** to close the service window and then click **Continue** to go to the Environment tab
 
 **Environment**
 
-The target infrastructure has been pre-created for us. The application will be deployed to a k8s cluster on the given namespace  
+The target infrastructure has been pre-created for us. The application will be deployed to a k8s cluster on the given namespace  
 
-- Click **- Select -** on the **"Specify Environment"** input box 
+- Click **- Select -** on the **"Specify Environment"** input box 
 
 - Select **prod** environment and click **"Apply Selected"**
 
@@ -248,7 +264,7 @@ The target infrastructure has been pre-created for us. The application will be d
 
 - Click **- Select -** on the **"Specify Infrastructure"** input box
 
--  From the dropdown select k8s
+-  From the dropdown select k8s
 
 
 
@@ -256,11 +272,15 @@ The target infrastructure has been pre-created for us. The application will be d
 | ----- | ----- | ----- |
 | Name  |k8s|       |
 
-- Click **Continue** 
+![Environment](images/lab3-environment.png "Environment")
+
+- Click **Continue**
 
 **Execution Strategies**
 
 - Select **Rolling** and click on **Use Strategy**, the frontend is a static application so no need to do canary.
+
+![Rolling strategy](images/lab3-strategy.png "Rolling strategy")
 
 
 # Lab 4 - Continuous Deploy - Backend
@@ -269,7 +289,7 @@ The target infrastructure has been pre-created for us. The application will be d
 
 **Learning Objective(s):**
 
-- Utilise complex deployment strategies to reduce blast radius of a release 
+- Utilise complex deployment strategies to reduce blast radius of a release 
 
 **Steps**
 
@@ -303,18 +323,26 @@ The target infrastructure has been pre-created for us and we used it in the prev
 
 - Select **Stage \[frontend]**
 
+![Propagate environment](images/lab4-propagate.png "Propagate environment")
+
 - Click **Continue**
 
 **Execution**
 
-- Select **Canary**  and click on **Use Strategy**
+- Select **Canary** and click on **Use Strategy**
 
-- **After** the canary deployment and **before** the canary delete step add **Harness Approval** step according to the table  below
+![Canary strategy](images/lab4-strategy.png "Canary strategy")
+
+- **After** the canary deployment and **before** the canary delete step add **Harness Approval** step according to the table  below
 
 | Input       | Value             | Notes |
 | ----------- | ----------------- | ----- |
 | Name        |Approval|       |
-| User Groups |All Project Users|     Select project to see the **"All Project Users"** option   |
+| User Groups |All Project Users| Select the **Project** tab to see the **"All Project Users"** option |
+
+![Approval step](images/lab4-approval.png "Approval step")
+![All Project Users](images/lab4-usergroup.png "All Project Users")
+
 - Click **Apply Changes**
 
 8. Click **Save** and then click **Run** to execute the pipeline with the following inputs. As a bonus, save your inputs as an Input Set before executing (see below)
@@ -323,20 +351,28 @@ The target infrastructure has been pre-created for us and we used it in the prev
 | ----------- | ----- | ----------- |
 | Branch Name |main| Leave as is |
 
-9. While the canary deployment is ongoing and waiting **approval** navigate to the web page and see if you can spot the canary (use the check release button) 
+The artifact tags for **frontend** and **backend** are already filled in from the service definitions.
+
+9. While the canary deployment is ongoing and waiting **approval** navigate to the web page and see if you can spot the canary (use the check release button) 
 
 | project                | domain        | suffix |
 | ---------------------- | ------------- | ------ |
 |http\://project_id|.cie-bootcamp|.co.uk|
 
-![](https://lh7-us.googleusercontent.com/docsz/AD_4nXfmb1N3lAe0EOnEun9neU9y3ilqy3HbxfnWfUMzF3FsykslwgQfU_W4pE0wlt5kYSp6_mTs7cVP0anhJ7uvtsytal2qX3ZEq3vvOT3DOBUzE9SZ3rpwkAHP6e_ExdRbo5VmN2kpxdFlp6u8iGaKwhW_uyAohEmJurkjmEB2Ww?key=cRG2cvp_PHVW0KG2Gq6Y_A)
+![Waiting for approval](images/lab4-approval-waiting.png "Waiting for approval")
+![Web application](images/lab4-webapp.png "Web application")
 
 10. Approve the canary deployment for the pipeline to complete
+
+![Approve](images/lab4-approve-dialog.png "Approve")
+![Pipeline succeeded](images/lab4-success.png "Pipeline succeeded")
 
 # Lab 5 - Chaos Engineering
 
 
 ### Summary: Fully integrated chaos experiments with the delivery process
+
+> **Prerequisite:** this lab needs Harness Chaos Engineering enabled for your project and a chaos infrastructure connected to the `prod` / `k8s` environment. Your instructor will confirm whether it is available for your session; Labs 6-10 do not depend on it.
 
 **Learning Objective(s):**
 
@@ -603,22 +639,25 @@ Observe the **logs** of the probe **Resilience Score** generated in comparisson 
 
 **Steps**:
 
-- While the canary deployment is ongoing navigate to the web page and see if you can spot the canary (use the check release button) 
+- Run the pipeline and, while the backend canary is waiting for **approval**, navigate to the web page (use the **Check Release** button)
 
 | project                | domain        | suffix |
 | ---------------------- | ------------- | ------ |
 | http\://\<project\_id>|.cie-bootcamp|.co.uk|
 
-- Drill down to the distribution test tab and run the traffic generation by clicking the **Start** button
+> **Note:** the canary runs the same `backend-latest` image as the primary, so **Check Release** shows the same version on every call. The Distribution Test is how you spot the canary.
 
-- Observe the traffic distribution
+![Check Release](images/lab6-release-1.png "Check Release")
 
-- Validate the outcome of the verification on the pipeline execution details
+- Drill down to the **Distribution Test** tab, click **Start** and then click the **play** icon to generate traffic
 
+- Observe the traffic distribution between the **normal** and **canary** instances
 
-\
-![](https://lh7-us.googleusercontent.com/docsz/AD_4nXdbAmEJ5zQPsKlw_nEknWvYo97pm5eWCXr6vU8-GgIL0ulAOSH9N07PoEcVSknARVQo7Tgj1s31VHqR1I3hu2dMIO1rIX5HHcmTPXoQPoyo8CPv13OhnJN5WVcZqSwUXzdDHmm3PxUnhtpGVl0PAMJ_1wnuodvUbVPBOdnGKQ?key=cRG2cvp_PHVW0KG2Gq6Y_A)
-![](https://lh7-us.googleusercontent.com/docsz/AD_4nXf-5oWX9OfvdmEb9MBm2_h2KKAa_QwmiJoM0fiKrTuxAr6GR4wxeulSlk48gyBK3dykrtIslDSkxpiGytrxH0JaxaQ4ZgTYxbmc8OenAH3nhGCvvOAxkWVjVBp1TRg_qQQi9z8OrNPK4udPtNL1LIyym6Ch5IMzrulFOcXhOQ?key=cRG2cvp_PHVW0KG2Gq6Y_A)
+![Traffic distribution](images/lab6-distribution.png "Traffic distribution")
+
+- Validate the outcome of the verification on the pipeline execution details, then approve the canary
+
+![Canary waiting for approval](images/lab6-canary.png "Canary waiting for approval")
 
 **Bonus**:
 - If the verification fails harness defaults to a manual intervention, you can now decide what you want to happen next (rollback, ignore etc.) 
@@ -663,9 +702,12 @@ Observe the **logs** of the probe **Resilience Score** generated in comparisson 
 
 > **Note:** The Harness Approval step we added inside the backend stage in Lab 4 is not enough - change policy requires an approval **before** any deployment stage, so the test fails. Failure is success, the policy is working as designed.
 
-![Policy as Code](images/lab5-opa.gif "Policy as Code")
+![Policy as Code](images/lab7-opa.gif "Policy as Code")
+![Policy test result](images/lab7-policy-test.png "Policy test result")
 
 5. Select the **Policy Sets** tab, find **Approval Required Policy Set** and toggle **Enforced** on
+
+![Enforced](images/lab7-enforced.png "Enforced")
 
 **Governance in Action**
 
@@ -675,19 +717,24 @@ Observe the **logs** of the probe **Resilience Score** generated in comparisson 
 
 3. Note that the save is blocked by the **Approval Required Policy**. Let's fix it!
 
-![Policy Violation](images/lab5-policy-violation.gif "Policy Violation")
+![Policy Violation](images/lab7-violation.gif "Policy Violation")
+![Policy Violation detail](images/lab7-violation-detail.png "Policy Violation detail")
 
 **Approvals via ServiceNow Change Requests**
 
 1. Hover before the **frontend** stage and click the **+** icon to add a new stage
 
-2. Click **Use Template**, select the **SNOW Approval** template and click **Use Template**
+2. Click **Use template**, select the **SNOW Approval** template and click **Use Template**
+
+![SNOW Approval template](images/lab7-template-preview.png "SNOW Approval template")
 
 3. Configure the stage as follows and click **Set Up Stage**
 
 | Input      | Value               | Notes |
 | ---------- | ------------------- | ----- |
 | Stage Name |ServiceNow Approval| The name must match exactly - the close templates reference this stage to find the change number |
+
+![Stage name](images/lab7-stage-name.png "Stage name")
 
 4. The template is pre-configured, so there are no inputs to fill in. Toggle **Overview** to see its two steps
 
@@ -696,17 +743,21 @@ Observe the **logs** of the probe **Resilience Score** generated in comparisson 
 | Create Ticket |ServiceNow Create| Raises a Normal change request with the pipeline name, execution number, triggering user, execution URL, justification, implementation, backout and test plans |
 | Approval      |ServiceNow Approval| Polls the change request every 30s. Approves when **State = Implement**, rejects when **State = Canceled** |
 
+![Template overview](images/lab7-overview.png "Template overview")
+
 5. Click on each step to see how it is configured. As a template user you cannot change the configuration of this enterprise-approved template - only the template administrator can. Note how Harness expressions such as `<+pipeline.executionUrl>` and `<+execution.steps.Create_Ticket.ticket.ticketNumber>` dynamically populate the ticket and the approval
 
-6. Navigate to the **backend** stage and, after the last step of the execution, click **Add Step**, select **Use Template** and choose **ServiceNow Close Ticket**
+6. Navigate to the **backend** stage and, after the last step of the execution, click **Add Step**, select **Use template** and choose **ServiceNow Close Ticket**
 
 | Input | Value        | Notes |
 | ----- | ------------ | ----- |
 | Name  |Close Ticket| Sets the change to **Closed** with close code **Successful** and links the execution in the close notes |
 
+![Close Ticket](images/lab7-close-name.png "Close Ticket")
+
 7. Click **Save**. No violations this time - hooray for compliance!
 
-![ServiceNow Approval](images/lab5-add-approval.gif "ServiceNow Approval")
+![ServiceNow Approval](images/lab7-add-approval.gif "ServiceNow Approval")
 
 **Approve the change as a Release Manager**
 
@@ -718,73 +769,111 @@ Observe the **logs** of the probe **Resilience Score** generated in comparisson 
 
 2. The pipeline pauses on the **ServiceNow Approval** stage. The pipeline has already raised the change request on your behalf and moved it to **Scheduled** - no manual change records for the developer to maintain
 
+![Change request created](images/lab7-create-ticket.png "Change request created")
+
 3. Click the **ServiceNow Approval** stage, select the **Approval** step and click the change number link in the step details to open the change request in a new tab
 
 4. Log in to the ServiceNow sandbox with the credentials provided by your instructor. Review the metadata the pipeline added to the change, then click **Implement** in the top right corner
 
+![Change request](images/lab7-snow-change.png "Change request")
+![Implement](images/lab7-snow-implement.png "Implement")
+
 5. Switch back to Harness and watch the pipeline continue once the approval criteria are met. When the backend stage completes, the **Close Ticket** step closes the change as **Successful**
 
-![ServiceNow Approval](images/lab7-snow-approval.gif "ServiceNow Approval")
+![Pipeline succeeded](images/lab7-success.png "Pipeline succeeded")
+![Change closed](images/lab7-snow-closed.png "Change closed")
 
 **Bonus**:
 - Run the pipeline again and this time **Cancel** the change in ServiceNow. Observe how the pipeline is rejected before anything is deployed to production
-- What happens to the change if the release fails after it was approved? See Lab 9
+- What happens to the change if the release fails after it was approved? See [Lab 9](#lab-9---enhanced-change-management-automation)
 
-# Lab 8 - Governance/Policy as Code (Advanced)
+# Lab 8 - Production Guardrails
 
-**Create a Policy to block critical CVEs**
+### Summary: An approval stage at the front of the pipeline is a good start, but production is special. In this lab you will enforce a policy that says *any deployment to the **prod** environment, or of the **backend** service, must include a policy check*, and then add a **Change Verified** policy step that confirms at runtime that the release is backed by an approved ServiceNow change.
+
+**Learning Objective(s):**
+
+- Write guardrails that target specific environments and services
+
+- Combine design-time (**On Save**) and runtime (**On Step**) policies
+
+- Use a Policy step to verify ServiceNow change details right before a production rollout
+
+**Why it matters:** The **Approval Required** policy checks the shape of the pipeline. The **Production Guardrail** policy goes further: nobody can create or edit a pipeline that deploys to production, or deploys the backend, without a policy check in that stage. And the **Change Verified** step proves - immediately before the rollout - that the change number is real and its approval succeeded. The evidence is stored with the execution for auditors.
+
+**Steps**
+
+**Enforce the Production Guardrail**
 
 1. From the secondary menu, select **Project Settings** and select **Policies**
 
-2. Select the **Policies** tab 
+2. Select the **Policies** tab and open **Production Guardrail Policy**. Review the rego:
 
-3. click **+ New Policy**, set the name to **Runtime OWASP CVEs** and click **Apply**
+| Rule | What it does |
+| ---- | ------------ |
+| `protected_environments := {"prod"}` | Environments that need a policy check |
+| `protected_services := {"backend"}` | Services that need a policy check, in any environment |
+| `deny[msg]` | Fails any Deployment stage that targets a protected environment or service and has no step of type **Policy** |
 
-4. Set the rego to the following and click **Save**
+3. Select the **Policy Sets** tab, find **Production Guardrail Policy Set** and toggle **Enforced** on
 
-<!---->
+![Enforce the Production Guardrail](images/lab8-enforce.png "Enforce the Production Guardrail")
 
-    package pipeline_environment
-    deny[sprintf("Node OSS Can't contain any critical vulnerability '%d'", [input.NODE_OSS_CRITICAL_COUNT])] {  
-       input.NODE_OSS_CRITICAL_COUNT != 0
-    }
+4. Open your pipeline in Pipeline Studio, make a small change and click **Save**. The save is blocked for **both** stages - frontend deploys to **prod**, and backend is a protected service
 
-5. Select the **Policy Sets** tab
+![Production Guardrail](images/lab8-guardrail.gif "Production Guardrail")
+![Production Guardrail violation](images/lab8-violation.png "Production Guardrail violation")
 
-6. Click **+ New Policy Set** and configure as follows
+**Add the Change Verified step**
 
-| Input                      | Value                     | Notes |
-| -------------------------- | ------------------------- | ----- |
-| Name                       |Criticals Not Allowed|       |
-| Entity Type                |Custom|       |
-| Event Evaluation           |On Step|       |
-| Policy Evaluation Criteria |                           |       |
-| Policy to Evaluate         |Runtime OWASP CVEs|       |
+The **Change Verified** step template is a **Policy** step that evaluates the **Change Verified Policy Set** (On Step) with this payload:
 
-7. For the new policy set, toggle the **Enforced** button
+```json
+{
+  "changeNumber": "<+pipeline.stages.ServiceNow_Approval.spec.execution.steps.Create_Ticket.ticket.ticketNumber>",
+  "approvalStatus": "<+pipeline.stages.ServiceNow_Approval.status>",
+  "environment": "<+env.identifier>",
+  "service": "<+service.identifier>"
+}
+```
 
-**Add Policy to Pipeline**
+The **Change Verified Policy** denies the step if the change number doesn't start with `CHG`, or if the ServiceNow Approval stage did not succeed.
 
-1. Open your pipeline
+1. Open the **frontend** stage → **Execution**. Hover **before** the **Rollout Deployment** step, click **+**, select **Use template** and choose **Change Verified**
 
-2. Go to an execution that already ran, and copy the CRITICAL output variable from the OWASP step like so:\
-   ![](https://lh7-us.googleusercontent.com/docsz/AD_4nXfYQ7ba5Q_cQ9xy2AFVZ5Mt0iZPYbyQDmBonp0pBQA13Z_IUeYdK8gRSbddtf_V3bSRfbhKWDbRSUVJTx3BTCc_VmwLIWyWLkdh89nLh0sEBA6fqQxTy0NADZ0YPZwCirNycRVGUQACdItaBotovPs5Hg6CmRpQHk5ysgV6RUlhSbIbkNxmHAo?key=cRG2cvp_PHVW0KG2Gq6Y_A)
+![Change Verified template](images/lab8-template-preview.png "Change Verified template")
 
-3. Select the **frontend** stage
+| Input | Value | Notes |
+| ----- | ----- | ----- |
+| Name  |Change Verified| |
 
-4. Before the **Rollout Deployment** Step Group, add a **Policy** type step and configure as follow
+![Add Change Verified](images/lab8-add-step.gif "Add Change Verified")
+![frontend stage](images/lab8-frontend-step.png "frontend stage")
 
-| Input       | Value                                          | Notes                                                                                                                                                   |
-| ----------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Name        |Policy - No Critical CVEs|                                                                                                                                                         |
-| Entity Type |Custom|                                                                                                                                                         |
-| Policy Set  |Criticals Now Allowed| Make sure to select the Project tab in order to see your Policy Set                                                                                     |
-| Payload     |{"NODE\_OSS\_CRITICAL\_COUNT": _\<variable>_}| Set the field type to Expression, then replace _\<variable>_ with OWASP output variable CRITICAL. Go to a previous execution to copy the variable path. |
+2. Open the **backend** stage → **Execution** and add the same template **before** the **Canary Deployment** step group
 
-5. Save the pipeline and execute. Note that the pipeline fails at the policy evaluation step due to critical vulnerabilities being found by OWASP.
+![backend stage](images/lab8-backend-step.png "backend stage")
 
+3. Click **Save**. The Production Guardrail is satisfied this time
 
-# Lab 9 - Enhanced Change Management Automation (Optional)
+**Run it**
+
+1. Click **Run**, and approve the change in ServiceNow (**Implement**) as in Lab 7
+
+2. When each deployment stage starts, click the **Change Verified** step. The logs show the policy set passed. Select the **Input** tab to see the change number, approval status, environment and service that were evaluated
+
+![Change Verified](images/lab8-change-verified.png "Change Verified")
+
+3. Approve the backend canary. The pipeline completes and **Close Ticket** closes the change
+
+![Approve the canary](images/lab8-approve.png "Approve the canary")
+![Pipeline succeeded](images/lab8-success.png "Pipeline succeeded")
+
+**Bonus**:
+- Add `"qa"` to `protected_environments` in the Production Guardrail policy. Which of your stages would be affected?
+- Open the **Policy Evaluations** tab of the execution to see every policy that was evaluated, both On Save and On Step
+
+# Lab 9 - Enhanced Change Management Automation
 
 ### Summary: Close the loop on failed releases. Configure rollback steps that automatically update ServiceNow when a deployment fails.
 
@@ -794,24 +883,113 @@ Observe the **logs** of the probe **Resilience Score** generated in comparisson 
 
 - Keep ServiceNow in sync with the real outcome of every release, including automated rollbacks
 
-**Why it matters:** When continuous verification or chaos experiments trigger an automated rollback, the change record must reflect what happened. Recording failures automatically keeps change management accurate and accountable without anyone chasing tickets after an incident.
+**Why it matters:** When an approver rejects a canary, or continuous verification or a chaos experiment triggers an automated rollback, the change record must reflect what happened. Recording failures automatically keeps change management accurate and accountable without anyone chasing tickets after an incident.
 
 **Steps**
 
 1. Open your pipeline in Pipeline Studio
 
-2. Click into the **backend** stage and toggle the **Rollback** view in the top right corner
+2. Click into the **backend** stage, open **Execution** and toggle the **Rollback** view in the top right corner
 
-![Rollback view](images/lab8-rollback-view.png "Rollback view")
+![Rollback view](images/lab9-rollback-view.png "Rollback view")
 
-3. Click the **+** button at the end of the rollback steps, select **Use Template** and choose **ServiceNow Close Failed**
+3. Click the **+** after the last rollback step, select **Use template** and choose **ServiceNow Close Failed**
+
+![ServiceNow Close Failed template](images/lab9-template-preview.png "ServiceNow Close Failed template")
 
 | Input | Value               | Notes |
 | ----- | ------------------- | ----- |
 | Name  |Close Failed Ticket| Sets the change to **Closed** with close code **Unsuccessful** and links the failed execution in the close notes |
 
+![Close Failed Ticket](images/lab9-close-name.png "Close Failed Ticket")
+
 4. Apply the changes and **Save** the pipeline
 
-![Rollback studio](images/lab8-rollback-studio.gif "Rollback studio")
+![Add Close Failed Ticket](images/lab9-rollback.gif "Add Close Failed Ticket")
+![Rollback steps](images/lab9-rollback-studio.png "Rollback steps")
 
-5. Run the pipeline and approve the change in ServiceNow as in Lab 7. When the pod-memory chaos experiment from Lab 5 causes continuous verification to fail, choose **Rollback** (or let the failure strategy roll back the stage). Open the change request again and confirm it was closed as **Unsuccessful** with a link to the failed execution
+**Fail a release**
+
+1. Run the pipeline and approve the change in ServiceNow as in Lab 7
+
+2. When the backend canary is waiting for approval, click **Approve or Reject**, add a comment and click **Reject**. (If chaos is enabled in your project, you can instead let the pod-memory experiment from Lab 5 fail continuous verification.)
+
+![Reject the canary](images/lab9-reject.png "Reject the canary")
+
+3. The backend stage failure strategy is **Rollback Stage**, so Harness runs the rollback steps: **Canary Delete**, **Rolling Rollback** and then **Close Failed Ticket**
+
+![Rolled back](images/lab9-rolled-back.png "Rolled back")
+
+4. Open the change request in ServiceNow. It is **Closed** with close code **Unsuccessful**, and the **Closure Information** tab links to the failed execution
+
+![Change closed unsuccessful](images/lab9-snow-unsuccessful.png "Change closed unsuccessful")
+![Closure information](images/lab9-snow-closure.png "Closure information")
+
+# Lab 10 - Governance/Policy as Code (Advanced)
+
+**Create a Policy to block critical CVEs**
+
+1. From the secondary menu, select **Project Settings** and select **Policies**
+
+2. Select the **Policies** tab 
+
+3. Click **+ New Policy**, set the name to **Runtime OWASP CVEs** and click **Apply**
+
+4. Set the rego to the following and click **Save**
+
+<!---->
+
+    package pipeline_environment
+    deny[sprintf("Node OSS Can't contain any critical vulnerability '%d'", [input.NODE_OSS_CRITICAL_COUNT])] {  
+       input.NODE_OSS_CRITICAL_COUNT != 0
+    }
+
+![New policy](images/lab10-policy.gif "New policy")
+![Runtime OWASP CVEs](images/lab10-policy.png "Runtime OWASP CVEs")
+
+5. Select the **Policy Sets** tab
+
+6. Click **+ New Policy Set** and configure as follows
+
+| Input                      | Value                     | Notes |
+| -------------------------- | ------------------------- | ----- |
+| Name                       |Criticals Not Allowed|       |
+| Entity Type                |Custom|       |
+| Event Evaluation           |On Step| Set automatically when you select **Custom** |
+| Policy Evaluation Criteria |                           |       |
+| Policy to Evaluate         |Runtime OWASP CVEs|       |
+
+![New policy set](images/lab10-policyset.png "New policy set")
+![Policy evaluation criteria](images/lab10-policyset-criteria.png "Policy evaluation criteria")
+
+7. For the new policy set, toggle the **Enforced** button
+
+![Enforced](images/lab10-enforced.png "Enforced")
+
+**Add Policy to Pipeline**
+
+1. Go to an execution that already ran, open the **OWASP** step, select the **Output** tab and copy the **CRITICAL** output variable path with the copy icon:
+
+   ![OWASP output variables](images/lab10-owasp-output.png "OWASP output variables")
+
+2. Open your pipeline and select the **frontend** stage
+
+3. After the **Change Verified** step and before the **Rollout Deployment** step, add a **Policy** type step from the Step Library and configure as follows
+
+| Input       | Value                                          | Notes                                                                                                                                                   |
+| ----------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name        |Policy - No Critical CVEs|                                                                                                                                                         |
+| Entity Type |Custom|                                                                                                                                                         |
+| Policy Set  |Criticals Not Allowed| Select the **Project** tab in the picker to see your Policy Set                                                                                     |
+| Payload     |{"NODE\_OSS\_CRITICAL\_COUNT": _\<variable>_}| Replace _\<variable>_ with the CRITICAL output variable you copied, e.g. `<+pipeline.stages.Build.spec.execution.steps.OWASP.output.outputVariables.CRITICAL>` |
+
+![Add Policy step](images/lab10-add-step.gif "Add Policy step")
+![Select policy set](images/lab10-select-policyset.png "Select policy set")
+![Policy step](images/lab10-policy-step.png "Policy step")
+![frontend stage](images/lab10-studio.png "frontend stage")
+
+4. Save the pipeline and execute. Note that the pipeline fails at the policy evaluation step due to critical vulnerabilities being found by OWASP, and the frontend stage rolls back.
+
+![Critical CVEs blocked](images/lab10-failed.png "Critical CVEs blocked")
+
+> **Tip:** the change request raised for this run stays in **Implement**. Cancel it in ServiceNow, or add the **ServiceNow Close Failed** template to the frontend rollback steps as you did for the backend in Lab 9.
