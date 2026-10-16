@@ -27,6 +27,7 @@ Welcome to the hands-on workshop prepared for **Tokio Marine North America Servi
 - [Lab 8 - Production Guardrails](#lab-8---production-guardrails)
 - [Lab 9 - Enhanced Change Management Automation](#lab-9---enhanced-change-management-automation)
 - [Lab 10 - Governance/Policy as Code (Advanced)](#lab-10---governancepolicy-as-code-advanced)
+- [Demo - Build in Azure DevOps, Deploy with Harness CD](lab-ado.md)
 
 > **Pre-provisioned for you:** your project already contains a **SNOW Approval** stage template, **ServiceNow Close Ticket**, **ServiceNow Close Failed** and **Change Verified** step templates, and the **Approval Required**, **Production Guardrail** and **Change Verified** policies. They all use the shared `workshop-snow` ServiceNow connector.
 
