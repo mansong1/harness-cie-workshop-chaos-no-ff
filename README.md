@@ -373,193 +373,87 @@ The artifact tags for **frontend** and **backend** are already filled in from th
 
 ### Summary: Fully integrated chaos experiments with the delivery process
 
-> **Prerequisite:** this lab needs Harness Chaos Engineering enabled for your project and a chaos infrastructure connected to the `prod` / `k8s` environment. Your instructor will confirm whether it is available for your session; Labs 6-10 do not depend on it.
-
 **Learning Objective(s):**
 
-- Auto generate chaos experiments on deployed services
-- Build a chaos experiments using a base fault (out of 200 OOTB faults)
-- Embed chaos engineering experiments into the deployment process
+- Enable resilience testing on an existing deployment environment
+- Build a chaos experiment from an out-of-the-box fault and an HTTP probe
+- Embed the chaos experiment into the deployment process
 - Add continuous verification to the deployed service
-- Automate release validation
+- Automate release validation: a canary that misbehaves under chaos is rolled back automatically
 
-**Steps**
+**Enable chaos on your environment**
 
-1. From the module selection menu select **resilience testing**
+1. From the module selection menu select **Resilience Testing**
+2. From the left hand menu, go to **Project Settings** and select **Resilience Test Infrastructures**
+3. On the **Kubernetes (Harness Infrastructure)** tab click **+ New Infrastructure**, select the **prod** environment and click **Continue**
+4. Create the infrastructure with the following values and click **Save**
 
-<img width="733" height="402" alt="Screenshot 2026-03-06 at 08 14 35" src="https://github.com/user-attachments/assets/3d6bba05-4189-4c14-893b-cb75e270029d" />
+| Input       | Value | Notes |
+| ----------- | ----- | ----- |
+| Name        |k8s-chaos| A chaos enabled infrastructure on the same cluster you deploy to |
+| Infrastructure Type |Kubernetes (Direct Connection)||
+| Connector   |k8s-prod||
+| Namespace   |\<your namespace\>| The namespace your frontend and backend are deployed to |
 
+![Create the chaos infrastructure](images/lab5-new-infra.png "Create the chaos infrastructure")
 
-4. From the left hand menu, go to **Project Settings**
-5. From the available tiles select “Discovery”
-6. After expanding the side menu of the “DA-K8s” agent click on “Discover Now”
-
-  ![image](https://github.com/user-attachments/assets/be1a029d-9b4e-4971-9519-f284ba75c815)
-
-
-
-**Create Application Map**
-
-1. After discovery is complete double click on the agent “DA-K8s”
-
-   ![image](https://github.com/user-attachments/assets/3094b76d-1d27-429d-ab67-0fdb8e978894)
-
-
-1. Select the "Application Maps" tab
-2. Click on **Create New Application Map** and enter the following values
-
-| Input                        | Value|  
-| ---------------------------- | ------ |
-| Name                         |workshop-am|
-
-4. Select the relevant services for your project name "use the search function to find the services"
-5. Click Save
-
-
-**Auto Generate Chaos Experiments**
-1. From left handside menu select **Resilience Management**
-2. Drill down to the previously created application map
-3. Navigate to **Chaos Experiments**
-4. Select **Only a few**
-
-Observe the auto generated experiments and run the **web-backend experiment**
-
-
-
-
----------------
-
-**Create Experiments manually**
-
-This time we will create a network corruption experiment
-
-1. From the left hand menu, go to **Chaos Testing**
-2. Select **+New Experiment**
-
-| Input                        | Value|  
-| ---------------------------- | ------ |
-| Name                         |network-corruption|
-
-3. Select **Harness Infra**
-
-  ![Screenshot 2024-11-28 at 14 24 21](https://github.com/user-attachments/assets/c47834a3-fe88-44ed-be7e-7cee97bcb303)
-
-  - Click on **"Select a chaos Infrastructure"**
-
- 
-4. On the popup window select the available options
-
-| Input                        | Value|  
-| ---------------------------- | ------ |
-| Select Environment|prod|
-| Select Infrastructure|k8s|
-
-5. Click on next to navigate to the experiment builder
-6. Click on **Add Fault**
-7. From the list of available faults select **Pod Network Corruption**
-8. From the navigation bar select **Target Application**
-
-| Input                        | Value | Notes |
-| ---------------------------- | ------ | -------|
-| Target Workload Kind|deployment||
-| Target Workload Namespace ||**Select the namespace available from the dropdown**|
-| Target Workload Names | Pick the backend deployment name|We will change that later |
-|Target Workload Labels | leave empty||
-
-
-9. From the navigation bar select **Tune Fault**
-
-| Input       | Value |
-| ----------- | ----- |
-| Total Chaos Duration |150|
-| Network Packet Corruption Percentage |100|
-10. Click on **Apply Changes** and then **Save**
-11. Run the experiment and observe the logs. 
-12. While the experiment is running navigate to the application's endpoint (see image below)
-13. Observe the network errors
-
-| project                | domain        | suffix |
-| ---------------------- | ------------- | ------ |
-| http\://\<project\_id>|.cie-bootcamp|.co.uk|
-
-<img width="1415" height="205" alt="image" src="https://github.com/user-attachments/assets/cb85c608-bfbb-4ec5-b179-c6ebd6ff394c" />
-
+5. Harness offers to onboard the infrastructure with service discovery. You do not need it for this lab, click **Exit**
 
 **Validate the health automatically**
 
-1. From the left hand menu, go to **Project Settings**
-2. Select **Chaos Probles**
-3. Create a new probe by clicking **+ New Probe**
-4. Select the HTTP probe
-   
-| Field                | Value        | Notes |
-| ---------------------- | ------------- | ------ |
-| http\://\<project\_id>.cie-bootcamp.co.uk |||
-| Criteria | == | | 
-| Response Code | 200 | | 
+1. From **Project Settings** select **Resilience Test Probes** and click **+ New Probe**
+2. Select **Kubernetes** and then **HTTP Probe**
 
-5. Move to the next tab **Configure Properties**
+| Field         | Value | Notes |
+| ------------- | ----- | ----- |
+| Name          |frontend-health||
+| URL           |http\://\<project\_id>.cie-bootcamp.co.uk/| Your application's endpoint |
+| Method        |GET||
+| Criteria      |==||
+| Response Code |200||
 
+3. Move to the next tab **Run Properties**
 
-| Field                | Value        | Notes |
-| ---------------------- | ------------- | ------ |
-| Timeout | 20s ||
-| Interval | 2s | | 
-| Attempt | 5 | | 
-| Initial Delay | 5s ||
+| Field         | Value |
+| ------------- | ----- |
+| Timeout       |20s|
+| Interval      |2s|
+| Attempt       |5|
+| Initial Delay |5s|
 
-Now that we have our probe navigate to **Chaos Testing**
-Drill down to the **network-latency** experiment
+4. Click **Next** and then **Create Probe**
 
-Hovering over the network fault we can add our newly created probe 
-Select **+ Add a parallel node -> Add a probe**
+![Probe created](images/lab5-probe.png "Probe created")
 
-<img width="519" height="354" alt="image" src="https://github.com/user-attachments/assets/519fc841-bbf1-4480-a01c-4583eab0b208" />
+**Create the experiment**
 
-Save and rerun the experiment 
-Observe the **logs** of the probe **Resilience Score** generated in comparisson to the previous execution
+1. From the left hand menu, go to **Chaos Experiments**
+2. Select **+ New Experiment** and then **Create from scratch**
 
+| Input | Value|
+| ----- | ---- |
+| Name  |pod-memory|
 
+3. Select **Kubernetes** and click **Select a resilience test infrastructure**
+4. On the popup window select the **prod** environment, then the **k8s-chaos** infrastructure, and click **Apply**. Infrastructures without chaos enabled are shown as **Chaos Not Enabled** and can't be selected
 
----------------
+![Select the chaos infrastructure](images/lab5-select-infra.png "Select the chaos infrastructure")
 
-**Create Experiments manually**
-
-1. From the left hand menu, go to **Chaos Testing**
-2. Select **+New Experiment**
-
-| Input                        | Value|  
-| ---------------------------- | ------ |
-| Name                         |pod-memory|
-
-3. Select **Harness Infra**
-
-  ![Screenshot 2024-11-28 at 14 24 21](https://github.com/user-attachments/assets/c47834a3-fe88-44ed-be7e-7cee97bcb303)
-
-  - Click on **"Select a chaos Infrastructure"**
-
- 
-4. On the popup window select the available options
-
-| Input                        | Value|  
-| ---------------------------- | ------ |
-| Select Environment|prod|
-| Select Infrastructure|k8s|
-
-5. Click on next to navigate to the experiment builder
-6. Click on **Add Fault**
-7. From the list of available faults select **Pod Memory Hog**
-8. From the navigation bar select **Target Application**
+5. Click **Next** to navigate to the experiment builder
+6. Click on the **+** and select **Add a fault**
+7. From the list of available faults select **Pod Memory Hog** and click **Add to Experiment**
+8. On the **Target Application** tab
 
 | Input                        | Value | Notes |
 | ---------------------------- | ------ | -------|
 | Target Workload Kind|deployment||
-| Target Workload Namespace ||**Select the namespace available from the dropdown**|
-| Target Workload Names | Pick the backend deployment name|We will change that later |
+| Target Workload Namespace |\<your namespace\>|**Select the namespace available from the dropdown**|
+| Target Workload Names |backend-\<project\_id>-deployment-canary| The canary only exists while the pipeline runs, so type the name and select it |
 |Target Workload Labels | leave empty||
 
+![Target the canary](images/lab5-target.png "Target the canary")
 
-9. From the navigation bar select **Tune Fault**
+9. On the **Tune Fault** tab
 
 | Input       | Value |
 | ----------- | ----- |
@@ -568,30 +462,19 @@ Observe the **logs** of the probe **Resilience Score** generated in comparisson 
 | Number of workers |1|
 | Pod affected percentage|100|
 
-10. Click on **Apply Changes** and then **Save**
+![Tune the fault](images/lab5-tune.png "Tune the fault")
 
+10. Click on **Apply Changes**
+11. Hover over the fault, select **Add a parallel node -> Add a probe**, choose **frontend-health** and click **Add to Experiment**, then **Apply Changes**
+12. Click **Save**
 
-**Change target service to canary using YAML**
-
-1. From the pipeline visual editor switch to yaml
-2. Click the edit button to go into edit mode
-3. Locate the service name (set on previous state) **TARGET_WORKLOAD_NAMES**
-4. Replace it with **backend-<project_name>-deployment-canary** where project_name is the harness project. Summary: add the suffic **-canary** to the target workload
-5. Save the experiment
-
+![pod-memory experiment](images/lab5-experiment.png "pod-memory experiment")
 
 **Embed chaos experiments into CD pipelines**
 
-1. From the module selection menu select Continuous Delivery & GitOps
-
-
-   ![Screenshot 2024-11-28 at 14 07 22](https://github.com/user-attachments/assets/898ee27b-7369-47c6-a145-e74b49bb4bed)
-
-   
+1. From the module selection menu select **Continuous Delivery & GitOps**
 2. From the left hand side menu select pipelines and drill down to the existing pipeline
-
-3. In the existing pipeline, within the Deploy backend stage **after** Canary Deployment and **before** the approval step click on the plus icon to add a new step
-
+3. In the existing pipeline, within the **backend** stage **after** Canary Deployment and **before** the Approval step click on the plus icon to add a new step
 4. Add a **Verify** step with the following configuration
 
 | Input                        | Value  | Notes                                                                                            |
@@ -599,31 +482,41 @@ Observe the **logs** of the probe **Resilience Score** generated in comparisson 
 | Name                         |Verify|                                                                                                  |
 | Continuous Verification Type |Canary|                                                                                                  |
 | Sensitivity                  |Low| This is to define how sensitive the ML algorithms are going to be on deviation from the baseline |
-| Duration                     |10mins|                                                                                                  |
+| Duration                     |10 mins|                                                                                                  |
 
-5. Under the verify step click on the plus icon to add a new step in parallel
-
-
-   ![Screenshot 2024-11-28 at 14 28 38](https://github.com/user-attachments/assets/368ba808-d303-43f8-8824-5d2e09367b01)
-
-   
-6. Add a **chaos** step with the following configuration
+5. Under the Verify step click on the plus icon to add a new step in parallel
+6. Add a **Chaos** step with the following configuration
 
 | Input                        | Value  |
 | ---------------------------- | ------ |
 | Name                         |Chaos|
 | Select Chaos Experiment |pod-memory|
-|  Expected Resilience Score|50| 
+|  Expected Resilience Score|50|
 
-7. Click on Apply Changes
+7. Click on **Apply Changes** and **Save**
 
-8. Click **Save** and then click **Run** to execute the pipeline with the following inputs.
+![Verify and Chaos in parallel](images/lab5-studio.png "Verify and Chaos in parallel")
+
+8. Click **Run** to execute the pipeline with the following inputs.
 
 | Input       | Value | Notes       |
 | ----------- | ----- | ----------- |
 | Branch Name |main| Leave as is |
 
-9. After 10 minutes review what happened with the execution 
+**Review what happened**
+
+1. Once the canary is deployed, Verify and Chaos run side by side. The memory hog pushes the canary pod's memory well above the primary pods'
+2. Verify compares the canary against the primary baseline and fails: **Pod Memory** is flagged **Unhealthy** on the canary node only
+
+![Verification failed](images/lab5-verify-metrics.png "Verification failed")
+
+3. The backend stage failure strategy is **Rollback Stage**, so Harness deletes the canary and rolls back. The release never reaches the primary deployment
+
+![Rolled back](images/lab5-exec.png "Rolled back")
+
+4. Open the **Resilience Tests** tab of the execution to see the experiment run and its resilience score. The score is 100% because the **frontend-health** probe kept passing: the fault stayed on the backend canary and never reached users, while Verify stopped the release
+
+![Resilience Tests](images/lab5-resilience.png "Resilience Tests")
 
 # Lab 6 - Validate Release
 
@@ -913,7 +806,7 @@ The **Change Verified Policy** denies the step if the change number doesn't star
 
 1. Run the pipeline and approve the change in ServiceNow as in Lab 7
 
-2. When the backend canary is waiting for approval, click **Approve or Reject**, add a comment and click **Reject**. (If chaos is enabled in your project, you can instead let the pod-memory experiment from Lab 5 fail continuous verification.)
+2. If you completed Lab 5 there is nothing to do: the pod-memory experiment runs against the canary, **Verify** flags it as unhealthy and the stage rolls back on its own. Otherwise, when the backend canary is waiting for approval, click **Approve or Reject**, add a comment and click **Reject**
 
 ![Reject the canary](images/lab9-reject.png "Reject the canary")
 
